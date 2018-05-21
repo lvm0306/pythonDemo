@@ -74,11 +74,70 @@ def savelocalsql():
     conn.close()
 
 
+def getinfo(num):
+    if num == 1:
+        respone = requests.get("http://www.mmonly.cc/tag/cs/", headers=ua_headers)
+    else:
+        respone = requests.get("http://www.mmonly.cc/tag/cs/" + str(num) + ".html", headers=ua_headers)
+    respone.encoding = getEncoding(base + tag).get_encode2()
+    soup = BeautifulSoup(respone.text, 'html.parser')
+    # 获取页码 和第一页入库
+    pages = soup.find_all('div', class_='pages')[0].find_all('li')
+    if (len(pages) == 1):
+        page = 1
+    else:
+        page = len(pages) - 2
+    print(page)
+    divs = soup.find_all('div', class_='item masonry_brick masonry-brick')
+    for i in divs:
+        a = i.find('a', class_='img_album_btn')
+        print(a['href'])
+        print(i.find_all('img')[0]['src'])
+        getpiclist()
+
+    # 判断是否有第二页，没有的话入下一个tag
+    if page == 1:
+        return
+    else:
+        num += 1
+        if num <= page:
+            getinfo(num)
+
+
+def getpiclist(num):
+    if num == 1:
+        respone = requests.get("http://www.mmonly.cc/mmtp/xgmn/243865.html", headers=ua_headers)
+    else:
+        respone = requests.get("http://www.mmonly.cc/mmtp/xgmn/243865_" + str(num) + ".html", headers=ua_headers)
+    respone.encoding = getEncoding(base + tag).get_encode2()
+    soup = BeautifulSoup(respone.text, 'html.parser')
+    # 获取页码 和第一页入库
+    bottom_pages = soup.find_all('div', class_='pages')[0].find_all('li')
+    # print(pages[0].a.string[2])
+    bg=bottom_pages[0].a.string
+    page=int(bg.replace('共','').replace('页:',''))
+    if page == 1:
+        page=1
+
+    pic = soup.find('div', id='big-pic').find('img')['src']
+    print(pic)
+
+    # 判断是否有第二页，没有的话入下一个tag
+    if page == 1:
+        return
+    else:
+        num+=1
+        if num <= page:
+            getpiclist(num)
+        else:
+            return
+
+
 # main
 if __name__ == '__main__':
     # 获取tag 至 本地数据库
-    catchTag()
-    savelocalsql()
+    # catchTag()
+    # savelocalsql()
     # 获取每个Tag 的详情
-
-
+    getinfo()
+    getpiclist(1)
