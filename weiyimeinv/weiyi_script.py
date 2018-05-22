@@ -6,7 +6,6 @@ import threading
 import pymysql
 import requests
 from bs4 import BeautifulSoup
-import util
 from util.getEncoding import getEncoding
 
 ua_headers = {
@@ -56,7 +55,7 @@ def catchTag():
 # 执行sql语句
 def getConn(conn, cursor, type, name, url):
     sql = "insert into weiyi_list(id, type, name, url)values (null,'%s','%s','%s')" % (type, name, url)
-    print(sql)
+    # print(sql)
     cursor.execute(sql)
     conn.commit()
 
@@ -74,11 +73,16 @@ def savelocalsql():
     conn.close()
 
 
-def getinfo(num):
+def getinfo(tag_, type_, num):
+    print("正在获取此分类---" + type_)
+    conn = pymysql.connect(host='localhost', user='root', password='',
+                           db='weiyi', charset='utf8')
+    cursor = conn.cursor()
+
     if num == 1:
-        respone = requests.get("http://www.mmonly.cc/tag/cs/", headers=ua_headers)
+        respone = requests.get("http://www.mmonly.cc" + tag_, headers=ua_headers)
     else:
-        respone = requests.get("http://www.mmonly.cc/tag/cs/" + str(num) + ".html", headers=ua_headers)
+        respone = requests.get("http://www.mmonly.cc" + tag_ + str(num) + ".html", headers=ua_headers)
     respone.encoding = getEncoding(base + tag).get_encode2()
     soup = BeautifulSoup(respone.text, 'html.parser')
     # 获取页码 和第一页入库
@@ -87,13 +91,21 @@ def getinfo(num):
         page = 1
     else:
         page = len(pages) - 2
-    print(page)
+    print("该" + tag_ + "分类有" + str(page))
     divs = soup.find_all('div', class_='item masonry_brick masonry-brick')
     for i in divs:
         a = i.find('a', class_='img_album_btn')
-        print(a['href'])
-        print(i.find_all('img')[0]['src'])
-        getpiclist()
+        if i.find('b'):
+            title = i.find('b').string
+        else:
+            title = i.find('div', class_='title').find('a').string
+
+        # print(title)
+        # print(i.find_all('img')[0]['src'])
+        try:
+            getpiclist(1, type_, title, cursor, conn, a['href'])
+        except Exception as e:
+            print(e)
 
     # 判断是否有第二页，没有的话入下一个tag
     if page == 1:
@@ -101,36 +113,56 @@ def getinfo(num):
     else:
         num += 1
         if num <= page:
-            getinfo(num)
+            getinfo(tag_, type_, num)
 
 
-def getpiclist(num):
+def getpiclist(num, type, title, cursor, conn, link):
+    link_ = link[:len(link) - 5]
     if num == 1:
-        respone = requests.get("http://www.mmonly.cc/mmtp/xgmn/243865.html", headers=ua_headers)
+        respone = requests.get(link, headers=ua_headers)
     else:
-        respone = requests.get("http://www.mmonly.cc/mmtp/xgmn/243865_" + str(num) + ".html", headers=ua_headers)
+        respone = requests.get(link_ + "_" + str(num) + ".html", headers=ua_headers)
     respone.encoding = getEncoding(base + tag).get_encode2()
     soup = BeautifulSoup(respone.text, 'html.parser')
     # 获取页码 和第一页入库
     bottom_pages = soup.find_all('div', class_='pages')[0].find_all('li')
     # print(pages[0].a.string[2])
-    bg=bottom_pages[0].a.string
-    page=int(bg.replace('共','').replace('页:',''))
+    bg = bottom_pages[0].a.string
+    page = int(bg.replace('共', '').replace('页:', ''))
     if page == 1:
-        page=1
+        page = 1
 
     pic = soup.find('div', id='big-pic').find('img')['src']
-    print(pic)
-
+    # print(pic)
+    # 执行存储语句
+    sql = "insert into weiyi_images(id, type, title, url)values (null,'%s','%s','%s')" % (type, title, pic)
+    print(sql)
+    cursor.execute(sql)
+    conn.commit()
     # 判断是否有第二页，没有的话入下一个tag
     if page == 1:
         return
     else:
-        num+=1
+        num += 1
         if num <= page:
-            getpiclist(num)
+            getpiclist(num, type, title, cursor, conn, link)
         else:
             return
+
+
+def getMyLocalTags():
+    conn = pymysql.connect(host='localhost', user='root', password='',
+                           db='weiyi', charset='utf8')
+    cursor = conn.cursor()
+    sql = "select * from  weiyi_list"
+    # sql = "insert into github(id,name,author,href,info,yuyan,star)values(null,{},{},{},{},{},{})".format(name,author,href,info,yuyan,star)
+    print(sql)
+    cursor.execute(sql)
+    tag_local_list = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return tag_local_list
 
 
 # main
@@ -139,5 +171,14 @@ if __name__ == '__main__':
     # catchTag()
     # savelocalsql()
     # 获取每个Tag 的详情
-    getinfo()
-    getpiclist(1)
+    taglocallist = getMyLocalTags()
+    print(taglocallist)
+    for i in taglocallist:
+        print(i)
+        try:
+            getinfo(i[3], i[2], 1)
+        except Exception as e:
+            print(e)
+
+    # getinfo('/tag/mnlz/','美女特征',1)
+    # getpiclist(1)
