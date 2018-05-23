@@ -12,3 +12,13 @@
 # # time.sleep(1)
 # #
 # # browser.quit()
+import requests
+from bs4 import BeautifulSoup
+
+def getHTml():
+    respone=requests.get('https://www.baidu.com')
+    soup=BeautifulSoup(respone.text,'html.parser')
+    print(soup)
+
+if __name__=='__main__':
+    getHTml()
