@@ -14,11 +14,11 @@
 # # browser.quit()
 import requests
 from bs4 import BeautifulSoup
-
+from linajia.citys import Citys
 def getHTml():
-    respone=requests.get('https://www.baidu.com')
-    soup=BeautifulSoup(respone.text,'html.parser')
-    print(soup)
+    c=Citys('https://www.lianjia.com/')
+    c.getCityList()
 
 if __name__=='__main__':
-    getHTml()
+    # getHTml()
+    print()
