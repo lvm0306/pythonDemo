@@ -7,8 +7,11 @@ import requests
 import csv
 import re
 # 6v电影小试身手
+from util.constant import local_headers
+
 baseurl = 'http://www.6vhao.tv/dy2/index_'
 
+from util.getEncoding import getEncoding
 
 def get6vtext(url):
     respone = requests.get('http://www.6vhao.tv/')
@@ -27,7 +30,8 @@ def get6vtext(url):
 
 
 def get6vmovie_url(pagenum):
-    respone = requests.get(baseurl + str(pagenum) + '.html')
+    respone = requests.get(baseurl + str(pagenum) + '.html',headers=local_headers)
+    respone.encoding = 'gb2312'
     url_soup = BeautifulSoup(respone.text, 'html.parser')
 
     # url_soup.decode("GB2312").encode("UTF-8")
@@ -44,6 +48,7 @@ def get6vmovie_url(pagenum):
 def getmovie_info(url):
     moview = []
     infohtml = requests.get(url)
+
     # code=get_encodings_from_content(infohtml.text)
     # print(code)
     info_soup = BeautifulSoup(infohtml.text, 'html.parser')
