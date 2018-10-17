@@ -136,5 +136,5 @@ v1 = [round(ng / ng_s, 2),
       round(zb / zb_s,2)]
 
 bar = Bar("哈尔滨各区每平价格")
-bar.add("哈尔滨", attr, v1, is_label_show=True, is_datazoom_show=True)
+bar.add("哈尔滨", attr, v1, is_label_show=True, is_datazoom_show=True,is_more_utils=True)
 bar.render("hrb_unit_price.html")
